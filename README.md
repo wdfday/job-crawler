@@ -2,7 +2,7 @@
 
 Hệ thống crawler việc làm từ [Vieclam24h.vn](https://vieclam24h.vn), xây dựng bằng Go với kiến trúc microservices.
 
-## 📋 Tính năng
+## Tính năng
 
 - **Crawler**: Thu thập dữ liệu từ API Vieclam24h
 - **Enricher**: Bổ sung dữ liệu từ JSON-LD (trang chi tiết)
@@ -10,7 +10,7 @@ Hệ thống crawler việc làm từ [Vieclam24h.vn](https://vieclam24h.vn), x�
 - **Deduplication**: Tránh crawl trùng lặp với Redis
 - **Queue System**: Xử lý bất đồng bộ với Redis List
 
-## 🏗️ Kiến trúc
+## Kiến trúc
 
 ```mermaid
 flowchart LR
@@ -24,7 +24,7 @@ flowchart LR
     W --> ES[(Elasticsearch)]
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -70,7 +70,7 @@ make test
 make queues
 ```
 
-## 📊 Elasticsearch Index
+## Elasticsearch Index
 
 Index: `jobs_vieclam24h`
 
@@ -115,7 +115,7 @@ go-crawler/
 └── README.md
 ```
 
-## ⚙️ Configuration
+## Configuration
 
 Environment variables trong `docker-compose.yml`:
 
@@ -130,7 +130,7 @@ Environment variables trong `docker-compose.yml`:
 
 - [Vieclam24h Data Pipeline](./vieclam24h.md) - Chi tiết về data flow và field mapping
 
-## 📝 License
+## License
 
 MIT License
 
