@@ -1,0 +1,115 @@
+version: '3.8'
+
+services:
+  # Elasticsearch for storing crawled jobs
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: es-crawler
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"\\|\"status\":\"yellow\"'" ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    networks:
+      - crawler-net
+
+  # Redis for queue & deduplication
+  redis:
+    image: redis:7-alpine
+    container_name: redis-crawler
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - crawler-net
+
+  # Vieclam24h: List Crawler
+  vl24h-crawler:
+    build: .
+    container_name: vl24h-crawler
+    command: [ "/app/vl24h-crawler" ]
+    environment:
+      - REDIS_ADDR=redis:6379
+      - CRAWLER_DELAY_MS=2000
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - crawler-net
+    restart: unless-stopped
+
+  # Vieclam24h: Enricher (Detail Scraper)
+  vl24h-enricher:
+    build: .
+    container_name: vl24h-enricher
+    command: [ "/app/vl24h-enricher" ]
+    environment:
+      - REDIS_ADDR=redis:6379
+      - REDIS_JOB_QUEUE=jobs:raw:vieclam24h
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - crawler-net
+    restart: unless-stopped
+
+  # Worker: Vieclam24h → Elasticsearch
+  vl24h-worker:
+    build: .
+    container_name: vl24h-worker
+    command: [ "/app/worker" ]
+    environment:
+      - REDIS_ADDR=redis:6379
+      - REDIS_JOB_QUEUE=jobs:raw:vieclam24h
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - ELASTICSEARCH_INDEX=jobs_vieclam24h
+      - WORKER_CONCURRENCY=5
+      - WORKER_BATCH_SIZE=50
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - crawler-net
+    restart: unless-stopped
+
+  # ========================================================================
+  # VietnamWorks Crawler - DISABLED (Uncomment to enable)
+  # ========================================================================
+  # vietnamworks-crawler:
+  #   build: .
+  #   container_name: vietnamworks-crawler
+  #   command: [ "/app/crawler-vietnamworks" ]
+  #   environment:
+  #     - REDIS_ADDR=redis:6379
+  #     - CRAWLER_DELAY_MS=2000
+  #   depends_on:
+  #     redis:
+  #       condition: service_healthy
+  #   networks:
+  #     - crawler-net
+  #   restart: unless-stopped
+
+volumes:
+  es_data:
+  redis_data:
+
+
+networks:
+  crawler-net:

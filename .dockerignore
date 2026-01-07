@@ -1,0 +1,84 @@
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+README*
+LICENSE
+docs/
+*.txt
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+Jenkinsfile
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build artifacts
+bin/
+build/
+dist/
+out/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test files
+*_test.go
+testdata/
+coverage.*
+*.test
+
+# Dependencies (will be downloaded in Dockerfile)
+vendor/
+
+# Logs
+*.log
+logs/
+
+# Temp files
+tmp/
+temp/
+*.tmp
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Kubernetes
+k8s/
+*.yaml
+*.yml
+
+# Scripts (unless needed)
+scripts/
+Makefile
+
+# Environment
+.env
+.env.*
+*.env
+
+# Database
+*.db
+*.sqlite
+*.sql
+
+# Misc
+node_modules/
+*.pyc
+__pycache__/
+
+data/*

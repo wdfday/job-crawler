@@ -1,0 +1,30 @@
+###
+GET https://apiv2.vieclam24h.vn/employer/fe/job/get-job-list?page=1&per_page=30&request_from=search_result_web
+Accept: application/json
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJjaGFubmVsX2NvZGUiOiJ2bDI0aCIsInVzZXIiOm51bGx9.a0POm2ZVRwetYs2QsMj0sRg8lZSSbKufX4sewqhAM5o
+X-Branch: vl24h.north
+
+###
+GET https://apiv2.vieclam24h.vn/employer/fe/job/get-job-list?page=1&per_page=30&request_from=search_result_web
+Accept: application/json
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJjaGFubmVsX2NvZGUiOiJ2bDI0aCIsInVzZXIiOm51bGx9.a0POm2ZVRwetYs2QsMj0sRg8lZSSbKufX4sewqhAM5o
+X-Branch: vl24h.north
+User-Agent: IntelliJ HTTP Client/DataSpell 2025.3.1
+Accept-Encoding: br, deflate, gzip, x-gzip
+
+###
+
+
+https://vieclam24h.vn/co-khi-o-to-tu-dong-hoa/ky-thuat-vien-lap-dat-he-thong-quan-trac-tu-dong-di-lam-ngay-c47p73id200734388.html?open_from=0201_1_1&search_id=0eef86ae8fa095b8d357bfd3831a7cce
+
+
+###
+https://vieclam24h.vn/lao-dong-pho-thong/cong-nhan-ky-thuat-c49p99id200733277.html?box=jobemployer&svs=max_box&open_from=20371042_2_2
+
+
+###
+https://vieclam24h.vn/san-xuat-lap-rap-che-bien/tay-ho-ha-noi-chuyen-vien-ho-tro-ky-thuat-va-quan-ly-chat-luong-c9p73id200734397.html
+
+###
+
+
