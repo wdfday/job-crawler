@@ -70,14 +70,14 @@ func (c *Crawler) CrawlWithCallback(ctx context.Context, handler module.JobHandl
 	totalJobCount := 0
 	newJobCount := 0
 
-	for page := 1; page <= c.config.MaxPages; page++ {
+	for page := 1; ; page++ {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
 		}
 
-		log.Printf("[Vieclam24h] Fetching page %d/%d", page, c.config.MaxPages)
+		log.Printf("[Vieclam24h] Fetching page %d", page)
 
 		resp, err := c.fetchPage(ctx, page)
 		if err != nil {

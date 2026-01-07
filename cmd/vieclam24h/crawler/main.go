@@ -80,8 +80,8 @@ func runCrawlerScheduler(ctx context.Context, c module.Crawler) {
 	// Run immediately
 	runCrawler(ctx, c)
 
-	// Schedule every hour
-	ticker := time.NewTicker(1 * time.Hour)
+	// Schedule every 6 hours
+	ticker := time.NewTicker(6 * time.Hour)
 	defer ticker.Stop()
 
 	for {
