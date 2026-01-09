@@ -25,25 +25,59 @@ Hệ thống thu thập và xử lý dữ liệu việc làm từ các trang tuy
                     └─────────────┘
 ```
 
+## Cài đặt công cụ
+
+Dự án sử dụng `just` để quản lý các lệnh (thay thế cho Makefile).
+
+### Windows (PowerShell)
+```powershell
+# Cài đặt qua winget
+winget install -e --id casey.just
+
+# Hoặc qua scoop
+scoop install just
+
+# Hoặc qua choco
+choco install just
+```
+
+### macOS
+```bash
+# Cài đặt qua brew
+brew install just
+
+# Hoặc qua macports
+sudo port install just
+```
+
+### Linux
+```bash
+# Cài đặt qua package manager (ví dụ Ubuntu/Debian)
+sudo apt install just
+
+# Hoặc cài đặt pre-built binary
+curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
+```
+
 ## Quick Start
 
 ```bash
 # Build và chạy
-make build
-make up
+just build
+just up
 
 # Xem logs
-make logs           # Tất cả services
-make logs-crawler   # Crawler only
-make logs-worker    # Worker only
+just logs           # Tất cả services
+just logs-crawler   # Crawler only
+just logs-worker    # Worker only
 
 # Kiểm tra trạng thái
-make stats          # Queue length, ES docs count
-make ps             # Container status
+just stats          # Queue length, ES docs count
+just ps             # Container status
 
 # Dừng
-make down           # Stop containers
-make clean          # Stop + xóa data
+just down           # Stop containers
+just clean          # Stop + xóa data
 ```
 
 ## Cấu hình
@@ -113,7 +147,7 @@ internal/
 
 ```bash
 # Xem queue
-make redis
+just redis
 LLEN jobs:pending:vieclam24h
 LLEN jobs:raw:vieclam24h
 
