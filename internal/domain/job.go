@@ -37,6 +37,10 @@ type Job struct {
 	LocationCity         []string  `json:"location_city"`     // Province/City (array)
 	LocationDistrict     []string  `json:"location_district"` // District (array)
 	ExpiredAt            time.Time `json:"expired_at"`
+
+	// Source timestamps
+	CreatedAt time.Time `json:"created_at"` // When job was created on source
+	UpdatedAt time.Time `json:"updated_at"` // When job was last updated on source
 }
 
 // RawJob represents raw extracted data before normalization

@@ -100,7 +100,7 @@ func (w *Worker) runSingle(ctx context.Context, workerID int) error {
 		default:
 		}
 
-		// Consume a batch of jobs
+		// ConsumeBatch uses BRPOP for first item (blocking), so no CPU spinning
 		rawJobs, err := w.consumer.ConsumeBatch(ctx, w.batchSize)
 		if err != nil {
 			log.Printf("Worker %d consume error: %v", workerID, err)
@@ -108,7 +108,7 @@ func (w *Worker) runSingle(ctx context.Context, workerID int) error {
 		}
 
 		if len(rawJobs) == 0 {
-			continue
+			continue // Timeout from BRPOP, try again
 		}
 
 		log.Printf("Worker %d processing %d jobs", workerID, len(rawJobs))

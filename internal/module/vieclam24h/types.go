@@ -10,17 +10,19 @@ type Config struct {
 	UserAgent    string
 	BearerToken  string
 	Branch       string // "vl24h.north" or "vl24h.south"
+	VerboseLog   bool   // Log every job with status and URL
 }
 
 // DefaultConfig returns default configuration
 func DefaultConfig() Config {
 	return Config{
-		MaxPages:     999, // Unlimited, rely on API's LastPage
+		MaxPages:     50,
 		PerPage:      30,
 		RequestDelay: 2 * time.Second,
 		UserAgent:    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
 		BearerToken:  "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJjaGFubmVsX2NvZGUiOiJ2bDI0aCIsInVzZXIiOm51bGx9.a0POm2ZVRwetYs2QsMj0sRg8lZSSbKufX4sewqhAM5o",
 		Branch:       "vl24h.north",
+		VerboseLog:   false, // Disabled by default
 	}
 }
 
@@ -68,7 +70,6 @@ type JobItem struct {
 	Status               int          `json:"status"`
 	CreatedAt            int64        `json:"created_at"`
 	UpdatedAt            int64        `json:"updated_at"`
-	ApprovedAt           int64        `json:"approved_at"`
 	TotalViews           int          `json:"total_views"`
 	TotalResumeApplied   int          `json:"total_resume_applied"`
 	ContactName          string       `json:"contact_name"`

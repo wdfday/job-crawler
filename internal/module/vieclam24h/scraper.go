@@ -28,7 +28,7 @@ type Scraper struct {
 // NewScraper creates a new detail scraper
 func NewScraper(consumer *queue.Consumer, publisher *queue.Publisher, jsonLdPublisher *queue.Publisher, delay time.Duration) *Scraper {
 	if delay <= 0 {
-		delay = 5 * time.Second
+		delay = 5*time.Second + time.Duration(rand.Intn(3000))*time.Millisecond
 	}
 	return &Scraper{
 		consumer:        consumer,

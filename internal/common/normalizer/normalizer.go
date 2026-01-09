@@ -235,20 +235,17 @@ func (n *Normalizer) normalizeVieclam24h(job *domain.Job, data map[string]any) {
 
 	// ExpiredAt from expiredAt field (Unix timestamp)
 	if expiredAt, ok := data["expiredAt"]; ok {
-		switch v := expiredAt.(type) {
-		case float64:
-			job.ExpiredAt = time.Unix(int64(v), 0)
-		case int64:
-			job.ExpiredAt = time.Unix(v, 0)
-		case int:
-			job.ExpiredAt = time.Unix(int64(v), 0)
-		case string:
-			if ts, err := strconv.ParseInt(v, 10, 64); err == nil {
-				job.ExpiredAt = time.Unix(ts, 0)
-			}
-		case time.Time:
-			job.ExpiredAt = v
-		}
+		job.ExpiredAt = parseUnixTimestamp(expiredAt)
+	}
+
+	// CreatedAt from createdAt field (Unix timestamp) - when job was created on source
+	if createdAt, ok := data["createdAt"]; ok {
+		job.CreatedAt = parseUnixTimestamp(createdAt)
+	}
+
+	// UpdatedAt from updatedAt field (Unix timestamp) - when job was last updated on source
+	if updatedAt, ok := data["updatedAt"]; ok {
+		job.UpdatedAt = parseUnixTimestamp(updatedAt)
 	}
 }
 
@@ -411,6 +408,28 @@ func getBool(data map[string]any, key string) bool {
 		}
 	}
 	return false
+}
+
+// parseUnixTimestamp parses Unix timestamp from various types
+func parseUnixTimestamp(val any) time.Time {
+	if val == nil {
+		return time.Time{}
+	}
+	switch v := val.(type) {
+	case float64:
+		return time.Unix(int64(v), 0)
+	case int64:
+		return time.Unix(v, 0)
+	case int:
+		return time.Unix(int64(v), 0)
+	case string:
+		if ts, err := strconv.ParseInt(v, 10, 64); err == nil {
+			return time.Unix(ts, 0)
+		}
+	case time.Time:
+		return v
+	}
+	return time.Time{}
 }
 
 // mapExperienceToTags maps experience text to tags with aggregation

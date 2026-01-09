@@ -56,11 +56,29 @@ func (c *Consumer) Consume(ctx context.Context) (*domain.RawJob, error) {
 }
 
 // ConsumeBatch consumes up to maxBatch jobs from the queue
+// Uses BRPOP to block-wait for first item (prevents CPU spinning)
+// Then uses RPOP to quickly grab remaining items for the batch
 func (c *Consumer) ConsumeBatch(ctx context.Context, maxBatch int) ([]*domain.RawJob, error) {
 	jobs := make([]*domain.RawJob, 0, maxBatch)
 
-	for i := 0; i < maxBatch; i++ {
-		// Use non-blocking pop for batch
+	// First item: use BRPOP to block until available (prevents CPU spinning)
+	result, err := c.client.BRPop(ctx, c.timeout, c.queueName).Result()
+	if err != nil {
+		if err == redis.Nil {
+			return jobs, nil // Timeout, no jobs
+		}
+		return nil, fmt.Errorf("brpop: %w", err)
+	}
+
+	if len(result) >= 2 {
+		var job domain.RawJob
+		if err := json.Unmarshal([]byte(result[1]), &job); err == nil {
+			jobs = append(jobs, &job)
+		}
+	}
+
+	// Remaining items: use non-blocking RPOP to fill the batch
+	for i := 1; i < maxBatch; i++ {
 		result, err := c.client.RPop(ctx, c.queueName).Result()
 		if err != nil {
 			if err == redis.Nil {

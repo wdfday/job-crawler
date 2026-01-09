@@ -1,94 +1,89 @@
 # =============================================================================
-# Build Stage - Compile Go binaries with optimization
+# Builder Stage - Build all binaries sequentially
 # =============================================================================
 FROM golang:1.24-alpine AS builder
 
-# Install build dependencies
-RUN apk add --no-cache \
-    git \
-    make \
-    upx
+RUN apk add --no-cache git ca-certificates
 
 WORKDIR /build
 
-# Copy dependency files first (better layer caching)
+# Layer 1: Dependencies (cached unless go.mod/go.sum changes)
 COPY go.mod go.sum ./
-RUN --mount=type=cache,target=/go/pkg/mod \
-    go mod download && go mod verify
+RUN go mod download
 
-# Copy source code
+# Layer 2: Source code
 COPY . .
 
-# Build arguments for optimization
-ARG VERSION=dev
-ARG BUILD_TIME
-ARG GIT_COMMIT=unknown
-
-# Build flags for smaller, faster binaries
-ARG LDFLAGS="-s -w \
-    -X main.Version=${VERSION} \
-    -X main.BuildTime=${BUILD_TIME} \
-    -X main.GitCommit=${GIT_COMMIT}"
-
-# Build all binaries with optimization
-RUN --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-    go build -ldflags="${LDFLAGS}" -trimpath -a -o /bin/vl24h-crawler ./cmd/vieclam24h/crawler && \
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-    go build -ldflags="${LDFLAGS}" -trimpath -a -o /bin/vl24h-enricher ./cmd/vieclam24h/enricher && \
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-    go build -ldflags="${LDFLAGS}" -trimpath -a -o /bin/crawler-vietnamworks ./cmd/vietnamworks && \
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-    go build -ldflags="${LDFLAGS}" -trimpath -a -o /bin/worker ./cmd/worker
-
-# Compress binaries with UPX (optional, comment out if issues)
-RUN upx --best --lzma /bin/vl24h-crawler /bin/vl24h-enricher /bin/crawler-vietnamworks /bin/worker || true
-
-# Verify binaries
-RUN /bin/vl24h-crawler --version 2>/dev/null || echo "Crawler built" && \
-    /bin/worker --version 2>/dev/null || echo "Worker built"
+# Layer 3: Build ALL binaries SEQUENTIALLY (no parallel, no mount cache)
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -trimpath -o /bin/vl24h-crawler ./cmd/vieclam24h/crawler && \
+    CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -trimpath -o /bin/vl24h-enricher ./cmd/vieclam24h/enricher && \
+    CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -trimpath -o /bin/worker ./cmd/worker && \
+    CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -trimpath -o /bin/vietnamworks ./cmd/vietnamworks
 
 # =============================================================================
-# Runtime Stage - Minimal production image
+# Runtime Targets - One per service
 # =============================================================================
-FROM alpine:3.19
 
-# Metadata
-LABEL maintainer="Project TKTT"
-LABEL description="Job crawler system for Vietnamese job sites"
-LABEL version="${VERSION}"
+# Vieclam24h Crawler Runtime
+FROM alpine:3.20 AS vl24h-crawler
 
-# Install runtime dependencies and create non-root user
-RUN apk add --no-cache \
-    ca-certificates \
-    tzdata \
-    dumb-init && \
-    addgroup -g 1000 -S crawler && \
-    adduser -u 1000 -S crawler -G crawler && \
-    mkdir -p /app /tmp/crawler && \
-    chown -R crawler:crawler /app /tmp/crawler
+RUN apk add --no-cache ca-certificates tzdata && \
+    adduser -D -u 1000 appuser
 
 WORKDIR /app
 
-# Copy binaries from builder
-COPY --from=builder --chown=crawler:crawler /bin/vl24h-crawler ./vl24h-crawler
-COPY --from=builder --chown=crawler:crawler /bin/vl24h-enricher ./vl24h-enricher
-COPY --from=builder --chown=crawler:crawler /bin/crawler-vietnamworks ./crawler-vietnamworks
-COPY --from=builder --chown=crawler:crawler /bin/worker ./worker
+COPY --from=builder --chown=appuser:appuser /bin/vl24h-crawler ./vl24h-crawler
 
-# Environment variables
-ENV TZ=Asia/Ho_Chi_Minh \
-    PATH="/app:${PATH}" \
-    TMPDIR=/tmp/crawler
+ENV TZ=Asia/Ho_Chi_Minh
 
-# Switch to non-root user
-USER crawler
+USER appuser
 
-# Health check (override in docker-compose for specific services)
-# Uncomment and customize based on service needs
-# HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-#     CMD ["/app/worker", "--health"]
+CMD ["/app/vl24h-crawler"]
 
-# Default command (overridden in docker-compose)
-ENTRYPOINT ["/usr/bin/dumb-init", "--"]
+# Vieclam24h Enricher Runtime
+FROM alpine:3.20 AS vl24h-enricher
+
+RUN apk add --no-cache ca-certificates tzdata && \
+    adduser -D -u 1000 appuser
+
+WORKDIR /app
+
+COPY --from=builder --chown=appuser:appuser /bin/vl24h-enricher ./vl24h-enricher
+
+ENV TZ=Asia/Ho_Chi_Minh
+
+USER appuser
+
+CMD ["/app/vl24h-enricher"]
+
+# Worker Runtime
+FROM alpine:3.20 AS worker
+
+RUN apk add --no-cache ca-certificates tzdata && \
+    adduser -D -u 1000 appuser
+
+WORKDIR /app
+
+COPY --from=builder --chown=appuser:appuser /bin/worker ./worker
+
+ENV TZ=Asia/Ho_Chi_Minh
+
+USER appuser
+
 CMD ["/app/worker"]
+
+## VietnamWorks Crawler Runtime
+#FROM alpine:3.20 AS vietnamworks
+#
+#RUN apk add --no-cache ca-certificates tzdata && \
+#    adduser -D -u 1000 appuser
+#
+#WORKDIR /app
+#
+#COPY --from=builder --chown=appuser:appuser /bin/vietnamworks ./vietnamworks
+#
+#ENV TZ=Asia/Ho_Chi_Minh
+#
+#USER appuser
+#
+#CMD ["/app/vietnamworks"]

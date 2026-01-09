@@ -32,7 +32,7 @@ type Crawler struct {
 // NewCrawler creates a new Vieclam24h crawler
 func NewCrawler(cfg Config, deduplicator *dedup.Deduplicator, pendingQueue *queue.Publisher) *Crawler {
 	if cfg.MaxPages <= 0 {
-		cfg.MaxPages = 999 // Unlimited, rely on API's LastPage
+		cfg.MaxPages = 50 // Unlimited, rely on API's LastPage
 	}
 	if cfg.PerPage <= 0 {
 		cfg.PerPage = 30
@@ -70,13 +70,7 @@ func (c *Crawler) CrawlWithCallback(ctx context.Context, handler module.JobHandl
 	totalJobCount := 0
 	newJobCount := 0
 
-	for page := 1; ; page++ {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-		}
-
+	for page := 1; page <= c.config.MaxPages; page++ {
 		log.Printf("[Vieclam24h] Fetching page %d", page)
 
 		resp, err := c.fetchPage(ctx, page)
@@ -92,6 +86,10 @@ func (c *Crawler) CrawlWithCallback(ctx context.Context, handler module.JobHandl
 
 		// Convert API items to RawJobs and check dedup
 		var pendingJobs []*domain.RawJob
+		newCount := 0
+		updatedCount := 0
+		unchangedCount := 0
+
 		for _, item := range resp.Data.Items {
 			job := c.itemToRawJob(item)
 
@@ -103,8 +101,28 @@ func (c *Crawler) CrawlWithCallback(ctx context.Context, handler module.JobHandl
 				continue
 			}
 
+			// Log all jobs with status and URL (if verbose enabled)
+			var status string
+			switch result {
+			case dedup.ResultNew:
+				status = "NEW"
+				newCount++
+			case dedup.ResultUpdated:
+				status = "UPDATED"
+				updatedCount++
+			case dedup.ResultUnchanged:
+				status = "UNCHANGED"
+				unchangedCount++
+			}
+
+			if c.config.VerboseLog {
+				log.Printf("[Vieclam24h] Page %d | %-9s | ID: %s | %s",
+					page, status, job.ID, job.URL)
+			}
+
+			// Skip unchanged jobs
 			if result == dedup.ResultUnchanged {
-				continue // Skip unchanged jobs
+				continue
 			}
 
 			pendingJobs = append(pendingJobs, job)
@@ -133,7 +151,8 @@ func (c *Crawler) CrawlWithCallback(ctx context.Context, handler module.JobHandl
 			}
 		}
 
-		log.Printf("[Vieclam24h] Page %d: %d jobs, %d new/updated", page, len(resp.Data.Items), len(pendingJobs))
+		log.Printf("[Vieclam24h] Page %d summary: %d total | %d NEW | %d UPDATED | %d UNCHANGED",
+			page, len(resp.Data.Items), newCount, updatedCount, unchangedCount)
 
 		// Stop if we've reached the last page (if LastPage is valid)
 		if resp.Data.Pagination.LastPage > 0 && page >= resp.Data.Pagination.LastPage {
@@ -252,10 +271,9 @@ func (c *Crawler) itemToRawJob(item JobItem) *domain.RawJob {
 			"totalResumeApplied": item.TotalResumeApplied,
 			"rateResponse":       item.EmployerInfo.RateResponse,
 			// Dates
-			"createdAt":  item.CreatedAt,
-			"updatedAt":  item.UpdatedAt,
-			"approvedAt": item.ApprovedAt,
-			"expiredAt":  item.ResumeApplyExpired,
+			"createdAt": item.CreatedAt,
+			"updatedAt": item.UpdatedAt,
+			"expiredAt": item.ResumeApplyExpired,
 		},
 		ExtractedAt: time.Now(),
 	}
